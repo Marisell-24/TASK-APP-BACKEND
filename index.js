@@ -2,11 +2,13 @@ import bodyParser from 'body-parser'
 import express from 'express'
 import dbClient from './db.js'
 import {ObjectId} from 'mongodb'
+import cors from 'cors'
 
 const app = express()
 
 // permite recibir datos en el body
 app.use(bodyParser.json())
+app.use(cors())
 
 // DB info
 const dbName = 'task_app'
@@ -16,6 +18,9 @@ const tasksCollectionName = 'tasks'
 // Obtener Todo
 app.get('/api/v1/tareas', async (req, res) => {
 
+    const estado = req.query.estado
+    // console.log(estado)
+
     // 1. Conexion a la DB
     await dbClient.connect()
     // 2. Seleccionar la DB
@@ -23,8 +28,19 @@ app.get('/api/v1/tareas', async (req, res) => {
     // 3. Seleccionar la coleccion
     const tasksCollection = taskAppDB.collection(tasksCollectionName)
 
+    let filtro = {}
+    if (estado === 'activa'  || estado === 'inactiva' || estado === 'finalizada') {
+        filtro = { estado: estado }
+    }
+    
     // 4. Realizar la query
-    const tasklist = await tasksCollection.find({}).toArray()
+    const tasklist = await tasksCollection.find(filtro, {
+        projection: {
+            titulo: true,
+            responsable: true,
+            estado: true,
+        }
+    }).toArray()
 
     // 5. Cerrar conexion
     await dbClient.close()
@@ -38,6 +54,8 @@ app.get('/api/v1/tareas', async (req, res) => {
 // Obtener Uno
 app.get('/api/v1/tareas/:id', async (req, res) => {
 
+    let id = req.params.id
+
     // 1. Conexion a la DB
     await dbClient.connect()
     // 2. Seleccionar la DB
@@ -46,6 +64,8 @@ app.get('/api/v1/tareas/:id', async (req, res) => {
     const tasksCollection = taskAppDB.collection(tasksCollectionName)
 
     // 4. Realizar la query
+    id = new ObjectId(id)
+    const tarea = await tasksCollection.findOne({_id: id})
 
 
     // 5. Cerrar conexion
@@ -53,7 +73,8 @@ app.get('/api/v1/tareas/:id', async (req, res) => {
 
 
     res.json({
-        message: 'documento entregado'
+        message: 'documento entregado',
+        data: tarea
     })
 })
 
@@ -132,7 +153,9 @@ app.put('/api/v1/tareas/:id', async (req, res) => {
 })
 
 // Eliminar
-app.delete('/api/v1/tareas', async (req, res) => {
+app.delete('/api/v1/tareas/:id', async (req, res) => {
+
+    let id = req.params.id
 
     // 1. Conexion a la DB
     await dbClient.connect()
@@ -142,6 +165,8 @@ app.delete('/api/v1/tareas', async (req, res) => {
     const tasksCollection = taskAppDB.collection(tasksCollectionName)
 
     // 4. Realizar la query
+    id = new ObjectId(id)
+    await tasksCollection.deleteOne({_id: id})
 
 
 
