@@ -1,8 +1,8 @@
 import bodyParser from 'body-parser'
-import express from 'express'
-import dbClient from './db.js'
-import {ObjectId} from 'mongodb'
 import cors from 'cors'
+import express from 'express'
+import {ObjectId} from 'mongodb'
+import dbClient from './db.js'
 
 const app = express()
 
@@ -113,6 +113,7 @@ app.put('/api/v1/tareas/:id', async (req, res) => {
     
     const taskData = req.body
     let id = req.params.id
+    console.log(taskData)
 
     // 1. Conexion a la DB
     await dbClient.connect()
